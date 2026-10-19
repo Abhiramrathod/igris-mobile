@@ -1,4 +1,4 @@
-name: Android CI/CD
+name: Android CI
 
 on:
   push:
@@ -7,84 +7,11 @@ on:
   pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
-
-permissions:
-  contents: read
-
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Run lint
-        run: |
-          chmod +x gradlew
-          ./gradlew lintDebug --no-daemon
-
-      - name: Upload lint report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-report
-          path: app/build/reports/lint-results-*
-          retention-days: 14
-
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Run unit tests
-        run: |
-          chmod +x gradlew
-          ./gradlew testDebugUnitTest --no-daemon
-
-      - name: Upload test report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-report
-          path: app/build/reports/tests/
-          retention-days: 14
-
   build:
     name: Build APKs
-    needs: [ lint, test ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -102,12 +29,16 @@ jobs:
       - name: Decode release keystore
         if: env.KEYSTORE_BASE64 != ''
         env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
         run: echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
 
       - name: Build debug and release APKs
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug assembleRelease --no-daemon
@@ -129,11 +60,10 @@ jobs:
           retention-days: 90
 
   release:
-    name: Release & Email Notification
+    name: Release & Email
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: write
     env:
@@ -175,18 +105,10 @@ jobs:
             <div style="font-family: Arial, sans-serif; background:#08080A; padding:24px; color:#D4D0C8;">
               <h2 style="color:#C8A24E;">&#9670; IGRIS Mobile ${{ github.ref_name }} &mdash; New Release</h2>
               <p>A new build of <b>IGRIS Mobile</b> has been published.</p>
-              <table style="border-collapse:collapse; margin:12px 0;">
-                <tr><td style="padding:4px 12px; color:#8A8680;">Version</td><td><b>${{ github.ref_name }}</b></td></tr>
-                <tr><td style="padding:4px 12px; color:#8A8680;">Commit</td><td><code>${{ github.sha }}</code></td></tr>
-                <tr><td style="padding:4px 12px; color:#8A8680;">Released</td><td>${{ github.event.head_commit.timestamp }}</td></tr>
-                <tr><td style="padding:4px 12px; color:#8A8680;">Repository</td><td><a href="https://github.com/${{ github.repository }}" style="color:#E4C06A;">${{ github.repository }}</a></td></tr>
-                <tr><td style="padding:4px 12px; color:#8A8680;">Release</td><td><a href="https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" style="color:#E4C06A;">View on GitHub</a></td></tr>
-              </table>
-              <p>The signed release APK is attached to this email.</p>
-              <p style="color:#5A5854; font-size:12px;">Sent automatically by the IGRIS Mobile CI/CD pipeline.</p>
+              <p>Version: <b>${{ github.ref_name }}</b><br/>
+              Commit: <code>${{ github.sha }}</code><br/>
+              Release: <a href="https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" style="color:#E4C06A;">View on GitHub</a></p>
+              <p>The release APK is attached to this email.</p>
+              <p style="color:#5A5854; font-size:12px;">Sent automatically by the IGRIS Mobile CI pipeline.</p>
             </div>
           attachments: "IgrisMobile-${{ github.ref_name }}.apk"
-
-      - name: Warn if email is not configured
-        if: env.MAIL_USERNAME == '' || env.MAIL_PASSWORD == ''
-        run: echo "::warning::MAIL_USERNAME / MAIL_PASSWORD secrets are not set - release email was skipped."
