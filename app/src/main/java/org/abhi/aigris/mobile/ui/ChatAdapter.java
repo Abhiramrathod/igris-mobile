@@ -41,21 +41,22 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         if (this.loading == loading) {
             return;
         }
+        int loadingPosition = messages.size();
         this.loading = loading;
         if (loading) {
-            notifyItemInserted(messages.size());
+            notifyItemInserted(loadingPosition);
         } else {
-            int position = messages.size();
-            if (position < getItemCount()) {
-                notifyItemRemoved(position);
-            }
+            notifyItemRemoved(loadingPosition);
         }
     }
 
     public void clear() {
-        int size = messages.size();
+        int count = getItemCount();
         messages.clear();
-        notifyItemRangeRemoved(0, size);
+        loading = false;
+        if (count > 0) {
+            notifyItemRangeRemoved(0, count);
+        }
     }
 
     public List<ChatMessage> getMessages() {

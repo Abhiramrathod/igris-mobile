@@ -8,8 +8,17 @@
 
     <string name="cd_new_chat">New chat</string>
     <string name="cd_settings">Settings</string>
+    <string name="cd_history">Chat history</string>
     <string name="cd_send">Send message</string>
     <string name="cd_igris_icon">IGRIS</string>
+
+    <string name="drawer_new_command">＋  New command</string>
+    <string name="drawer_label_status">Status</string>
+    <string name="drawer_status">Operational</string>
+    <string name="drawer_label_rank">Rank</string>
+    <string name="drawer_rank">S-Class</string>
+    <string name="drawer_sessions">Sessions</string>
+    <string name="drawer_footer">Shadow Command v2.0</string>
 
     <string name="hint_input">Enter your command…</string>
     <string name="prompt_symbol">❯</string>
@@ -59,10 +68,9 @@
     <string name="toast_saved">Configuration saved</string>
     <string name="toast_error_number">Invalid number, field left unchanged</string>
 
-    <string name="dialog_new_chat_title">New battle session?</string>
-    <string name="dialog_new_chat_message">The current conversation will be erased.</string>
-    <string name="dialog_new_chat_positive">Erase</string>
-    <string name="dialog_new_chat_negative">Cancel</string>
+    <string name="dialog_delete_session_title">Delete session?</string>
+    <string name="dialog_delete_session_message">This conversation will be permanently removed from local storage.</string>
+    <string name="dialog_delete_session_positive">Delete</string>
 
     <string name="dialog_setup_title">Configure IGRIS</string>
     <string name="dialog_setup_message">No API key configured yet. Open settings to connect your LLM API or IGRIS backend.</string>

@@ -3,15 +3,6 @@ package org.abhi.aigris.mobile.data;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import org.abhi.aigris.mobile.model.ChatMessage;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-
 public class PrefsManager {
 
     public static final String MODE_DIRECT = "direct";
@@ -31,10 +22,8 @@ public class PrefsManager {
     private static final String KEY_TEMPERATURE = "temperature";
     private static final String KEY_MAX_TOKENS = "max_tokens";
     private static final String KEY_SYSTEM_PROMPT = "system_prompt";
-    private static final String KEY_CHAT_HISTORY = "chat_history";
 
     private final SharedPreferences prefs;
-    private final Gson gson = new Gson();
 
     public PrefsManager(Context context) {
         prefs = context.getApplicationContext()
@@ -120,27 +109,5 @@ public class PrefsManager {
 
     public void setSystemPrompt(String systemPrompt) {
         prefs.edit().putString(KEY_SYSTEM_PROMPT, systemPrompt).apply();
-    }
-
-    public List<ChatMessage> loadChatHistory() {
-        String json = prefs.getString(KEY_CHAT_HISTORY, "");
-        if (json == null || json.isEmpty()) {
-            return new ArrayList<>();
-        }
-        try {
-            Type type = new TypeToken<List<ChatMessage>>() {}.getType();
-            List<ChatMessage> messages = gson.fromJson(json, type);
-            return messages != null ? messages : new ArrayList<>();
-        } catch (Exception e) {
-            return new ArrayList<>();
-        }
-    }
-
-    public void saveChatHistory(List<ChatMessage> messages) {
-        prefs.edit().putString(KEY_CHAT_HISTORY, gson.toJson(messages)).apply();
-    }
-
-    public void clearChatHistory() {
-        prefs.edit().remove(KEY_CHAT_HISTORY).apply();
     }
 }

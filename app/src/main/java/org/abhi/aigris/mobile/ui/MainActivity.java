@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.animation.RotateAnimation;
 import android.widget.AdapterView;
@@ -11,13 +12,16 @@ import android.widget.ArrayAdapter;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.abhi.aigris.mobile.R;
 import org.abhi.aigris.mobile.api.LlmClient;
 import org.abhi.aigris.mobile.data.PrefsManager;
+import org.abhi.aigris.mobile.data.SessionStore;
 import org.abhi.aigris.mobile.databinding.ActivityMainBinding;
 import org.abhi.aigris.mobile.model.ChatMessage;
+import org.abhi.aigris.mobile.model.ChatSession;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,16 +30,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private PrefsManager prefs;
+    private SessionStore sessionStore;
     private LlmClient client;
-    private ChatAdapter adapter;
+    private ChatAdapter chatAdapter;
+    private SessionAdapter sessionAdapter;
+    private ChatSession activeSession;
     private final List<ChatMessage> messages = new ArrayList<>();
-    private String sessionId = UUID.randomUUID().toString();
     private final List<String> modelList = new ArrayList<>();
     private ArrayAdapter<String> modelAdapter;
     private boolean loading = false;
@@ -48,12 +53,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         prefs = new PrefsManager(this);
+        sessionStore = new SessionStore(this);
         client = new LlmClient();
+
+        activeSession = sessionStore.getActiveSession();
+        messages.addAll(activeSession.getMessages());
 
         setupTopBar();
         setupChatList();
+        setupDrawer();
         setupComposer();
-        restoreHistory();
+        bindActiveSession();
         startCrownRotation();
 
         if (prefs.getApiKey().isEmpty() && !prefs.isBackendMode() && !setupPromptShown) {
@@ -66,16 +76,48 @@ public class MainActivity extends AppCompatActivity {
         binding.txtDate.setText(new SimpleDateFormat("EEE, MMM d", Locale.US)
                 .format(new Date()));
 
+        binding.btnHistory.setOnClickListener(v ->
+                binding.drawer.openDrawer(GravityCompat.START));
+
         binding.btnSettings.setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
 
-        binding.btnNewChat.setOnClickListener(v -> confirmNewChat());
+        binding.btnNewChat.setOnClickListener(v -> newSession());
     }
 
     private void setupChatList() {
-        adapter = new ChatAdapter();
+        chatAdapter = new ChatAdapter();
         binding.recyclerMessages.setLayoutManager(new LinearLayoutManager(this));
-        binding.recyclerMessages.setAdapter(adapter);
+        binding.recyclerMessages.setAdapter(chatAdapter);
+    }
+
+    private void setupDrawer() {
+        binding.drawerPanel.recyclerSessions.setLayoutManager(new LinearLayoutManager(this));
+
+        sessionAdapter = new SessionAdapter();
+        binding.drawerPanel.recyclerSessions.setAdapter(sessionAdapter);
+
+        sessionAdapter.setListener(new SessionAdapter.Listener() {
+            @Override
+            public void onSessionClick(ChatSession session) {
+                if (loading || session.getId().equals(activeSession.getId())) {
+                    binding.drawer.closeDrawer(GravityCompat.START);
+                    return;
+                }
+                sessionStore.setActive(session.getId());
+                switchToSession(session);
+                binding.drawer.closeDrawer(GravityCompat.START);
+            }
+
+            @Override
+            public void onSessionLongClick(ChatSession session) {
+                confirmDeleteSession(session);
+            }
+        });
+
+        binding.drawerPanel.btnNewCommand.setOnClickListener(v -> newSession());
+
+        refreshSessions();
     }
 
     private void setupComposer() {
@@ -112,8 +154,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         binding.inputMessage.setOnEditorActionListener((v, actionId, event) -> {
-            sendMessage();
-            return true;
+            boolean fromSendKey = event != null
+                    && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN;
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND || fromSendKey) {
+                sendMessage();
+                return true;
+            }
+            return false;
         });
 
         binding.btnSend.setOnClickListener(v -> sendMessage());
@@ -123,6 +171,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         refreshModels();
+        refreshSessions();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
+            binding.drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void refreshModels() {
@@ -152,6 +210,61 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void switchToSession(ChatSession session) {
+        activeSession = session;
+        messages.clear();
+        messages.addAll(session.getMessages());
+        chatAdapter.clear();
+        for (ChatMessage message : messages) {
+            chatAdapter.addMessage(message);
+        }
+        binding.welcome.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
+        sessionAdapter.setActiveSessionId(session.getId());
+        refreshSessions();
+        scrollToBottom();
+    }
+
+    private void bindActiveSession() {
+        sessionAdapter.setActiveSessionId(activeSession.getId());
+        chatAdapter.clear();
+        for (ChatMessage message : messages) {
+            chatAdapter.addMessage(message);
+        }
+        binding.welcome.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
+        refreshSessions();
+    }
+
+    private void newSession() {
+        if (loading) {
+            return;
+        }
+        ChatSession session = sessionStore.createSession();
+        switchToSession(session);
+        binding.drawer.closeDrawer(GravityCompat.START);
+    }
+
+    private void confirmDeleteSession(ChatSession session) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_delete_session_title)
+                .setMessage(R.string.dialog_delete_session_message)
+                .setPositiveButton(R.string.dialog_delete_session_positive, (d, w) -> {
+                    boolean wasActive = session.getId().equals(activeSession.getId());
+                    sessionStore.delete(session.getId());
+                    if (wasActive) {
+                        switchToSession(sessionStore.getActiveSession());
+                    } else {
+                        refreshSessions();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void refreshSessions() {
+        sessionAdapter.setSessions(sessionStore.getSessionsSorted());
+        sessionAdapter.setActiveSessionId(activeSession.getId());
+    }
+
     private void sendMessage() {
         if (loading) {
             return;
@@ -169,83 +282,62 @@ public class MainActivity extends AppCompatActivity {
         ChatMessage userMessage = new ChatMessage(
                 ChatMessage.ROLE_USER, text, System.currentTimeMillis());
         messages.add(userMessage);
-        adapter.addMessage(userMessage);
+        chatAdapter.addMessage(userMessage);
+        sessionStore.save(activeSession);
 
         binding.welcome.setVisibility(View.GONE);
         binding.inputMessage.setText("");
         setLoading(true);
         scrollToBottom();
 
+        final String sourceSessionId = activeSession.getId();
         List<ChatMessage> snapshot = new ArrayList<>(messages);
-        client.sendChat(snapshot, prefs, sessionId, new LlmClient.ResponseCallback() {
-            @Override
-            public void onSuccess(String response) {
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-                appendAssistant(response, false);
-            }
+        client.sendChat(snapshot, prefs, sourceSessionId,
+                new LlmClient.ResponseCallback() {
+                    @Override
+                    public void onSuccess(String response) {
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        if (!sourceSessionId.equals(activeSession.getId())) {
+                            setLoading(false);
+                            return;
+                        }
+                        appendAssistant(response, false);
+                    }
 
-            @Override
-            public void onError(String message) {
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-                appendAssistant("Error: " + message, true);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        if (!sourceSessionId.equals(activeSession.getId())) {
+                            setLoading(false);
+                            return;
+                        }
+                        appendAssistant("Error: " + message, true);
+                    }
+                });
     }
 
     private void appendAssistant(String content, boolean error) {
         ChatMessage assistantMessage = new ChatMessage(
                 ChatMessage.ROLE_ASSISTANT, content, System.currentTimeMillis(), error);
         messages.add(assistantMessage);
-        adapter.addMessage(assistantMessage);
+        chatAdapter.addMessage(assistantMessage);
+        sessionStore.save(activeSession);
         setLoading(false);
-        persistHistory();
         scrollToBottom();
     }
 
     private void setLoading(boolean isLoading) {
         loading = isLoading;
-        adapter.setLoading(isLoading);
+        chatAdapter.setLoading(isLoading);
         binding.inputMessage.setEnabled(!isLoading);
         binding.spinnerModel.setEnabled(!isLoading);
         binding.btnSend.setEnabled(!isLoading
                 && binding.inputMessage.getText() != null
                 && binding.inputMessage.getText().toString().trim().length() > 0);
-    }
-
-    private void restoreHistory() {
-        messages.clear();
-        messages.addAll(prefs.loadChatHistory());
-        adapter.clear();
-        for (ChatMessage message : messages) {
-            adapter.addMessage(message);
-        }
-        binding.welcome.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
-    }
-
-    private void persistHistory() {
-        prefs.saveChatHistory(messages);
-    }
-
-    private void confirmNewChat() {
-        if (messages.isEmpty()) {
-            return;
-        }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.dialog_new_chat_title)
-                .setMessage(R.string.dialog_new_chat_message)
-                .setPositiveButton(R.string.dialog_new_chat_positive, (d, w) -> {
-                    messages.clear();
-                    adapter.clear();
-                    prefs.clearChatHistory();
-                    binding.welcome.setVisibility(View.VISIBLE);
-                    sessionId = UUID.randomUUID().toString();
-                })
-                .setNegativeButton(R.string.dialog_new_chat_negative, null)
-                .show();
     }
 
     private void showSetupDialog() {
@@ -260,8 +352,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void scrollToBottom() {
         binding.recyclerMessages.post(() -> {
-            if (adapter.getItemCount() > 0) {
-                binding.recyclerMessages.smoothScrollToPosition(adapter.getItemCount() - 1);
+            if (chatAdapter.getItemCount() > 0) {
+                binding.recyclerMessages.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
             }
         });
     }
