@@ -81,7 +81,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -102,9 +101,13 @@ jobs:
 
       - name: Decode release keystore
         if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
         run: echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
 
       - name: Build debug and release APKs
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug assembleRelease --no-daemon
