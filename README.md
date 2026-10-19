@@ -1,6 +1,6 @@
 # IGRIS Mobile
 
-[![Android CI](https://github.com/Abhiramrathod/igris-ai/actions/workflows/android.yml/badge.svg)](https://github.com/Abhiramrathod/igris-ai/actions/workflows/android.yml)
+[![Android CI](https://github.com/Abhiramrathod/igris-mobile/actions/workflows/android.yml/badge.svg)](https://github.com/Abhiramrathod/igris-mobile/actions/workflows/android.yml)
 
 Native Android (Java) client for the **IGRIS** AI platform — a ChatGPT-style mobile chat with the same *"Shadow Monarch — Command Interface"* look as the [igris-ai](https://github.com/Abhiramrathod/igris-ai) web UI.
 
@@ -40,8 +40,8 @@ Native Android (Java) client for the **IGRIS** AI platform — a ChatGPT-style m
 ### Option 3 — Build it yourself
 
 ```bash
-git clone https://github.com/Abhiramrathod/igris-ai.git
-cd igris-ai   # or this project folder
+git clone https://github.com/Abhiramrathod/igris-mobile.git
+cd igris-mobile
 
 # Debug APK (signed with the debug key, ready to install)
 ./gradlew assembleDebug
