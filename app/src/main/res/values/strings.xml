@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">IGRIS</string>
+
+    <string name="topbar_title">Shadow Monarch</string>
+    <string name="topbar_subtitle">Command Interface</string>
+    <string name="topbar_icon">◈</string>
+
+    <string name="cd_new_chat">New chat</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_send">Send message</string>
+    <string name="cd_igris_icon">IGRIS</string>
+
+    <string name="hint_input">Enter your command…</string>
+    <string name="prompt_symbol">❯</string>
+
+    <string name="welcome_title">Shadow Army</string>
+    <string name="welcome_desc">Your commands shape the battlefield</string>
+    <string name="welcome_tip_1">▹  Ask anything about strategy, tactics, or intelligence</string>
+    <string name="welcome_tip_2">▹  Request analysis or summaries of complex topics</string>
+    <string name="welcome_tip_3">▹  Command IGRIS to execute specialized operations</string>
+
+    <string-array name="connection_modes">
+        <item>Direct LLM API (NVIDIA / OpenAI compatible)</item>
+        <item>IGRIS Backend (/ai/chat)</item>
+    </string-array>
+
+    <string name="author_user">Monarch</string>
+    <string name="author_assistant">IGRIS</string>
+    <string name="processing">Processing</string>
+
+    <string name="title_settings">IGRIS Configuration</string>
+    <string name="settings_subtitle">Connection · Model · Persona</string>
+
+    <string name="label_mode">Connection Mode</string>
+    <string name="mode_direct">Direct LLM API (NVIDIA / OpenAI compatible)</string>
+    <string name="mode_backend">IGRIS Backend (/ai/chat)</string>
+
+    <string name="label_base_url">Base URL</string>
+    <string name="hint_base_url_direct">https://integrate.api.nvidia.com/v1</string>
+    <string name="hint_base_url_backend">http://10.0.2.2:8080</string>
+
+    <string name="label_api_key">API Key</string>
+    <string name="hint_api_key">nvapi-…</string>
+
+    <string name="label_model">Default Model</string>
+    <string name="hint_model">mistralai/mistral-small-4-119b-2603</string>
+
+    <string name="label_temperature">Temperature</string>
+    <string name="hint_temperature">1.0</string>
+
+    <string name="label_max_tokens">Max Tokens</string>
+    <string name="hint_max_tokens">8192</string>
+
+    <string name="label_system_prompt">System Prompt (persona)</string>
+    <string name="default_system_prompt">You are IGRIS, the royal AI command system of the Shadow Monarch. Be precise, powerful, and helpful.</string>
+
+    <string name="btn_save">Save Configuration</string>
+    <string name="toast_saved">Configuration saved</string>
+    <string name="toast_error_number">Invalid number, field left unchanged</string>
+
+    <string name="dialog_new_chat_title">New battle session?</string>
+    <string name="dialog_new_chat_message">The current conversation will be erased.</string>
+    <string name="dialog_new_chat_positive">Erase</string>
+    <string name="dialog_new_chat_negative">Cancel</string>
+
+    <string name="dialog_setup_title">Configure IGRIS</string>
+    <string name="dialog_setup_message">No API key configured yet. Open settings to connect your LLM API or IGRIS backend.</string>
+    <string name="dialog_setup_positive">Settings</string>
+    <string name="dialog_setup_negative">Later</string>
+</resources>

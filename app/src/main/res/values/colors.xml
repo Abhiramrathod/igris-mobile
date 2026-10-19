@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mc_black">#FF000000</color>
+    <color name="mc_bg">#FF08080A</color>
+    <color name="mc_surface">#FF111114</color>
+    <color name="mc_surface_2">#FF1A1A1F</color>
+    <color name="mc_surface_3">#FF222228</color>
+    <color name="mc_border">#FF2A2A30</color>
+
+    <color name="mc_gold">#FFC8A24E</color>
+    <color name="mc_gold_bright">#FFE4C06A</color>
+    <color name="mc_gold_dim">#FF8A6F35</color>
+
+    <color name="mc_cream">#FFF5E6C8</color>
+    <color name="mc_warm_white">#FFEDE4D4</color>
+
+    <color name="mc_text">#FFD4D0C8</color>
+    <color name="mc_text_secondary">#FF8A8680</color>
+    <color name="mc_text_muted">#FF5A5854</color>
+
+    <color name="mc_user_bg">#FF1C1A16</color>
+    <color name="mc_user_border">#FF3A352A</color>
+
+    <color name="mc_ai_bg">#FF12141A</color>
+    <color name="mc_ai_border">#FF2A2D38</color>
+
+    <color name="mc_red">#FFD44040</color>
+    <color name="mc_green">#FF40B880</color>
+</resources>
