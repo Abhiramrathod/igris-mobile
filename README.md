@@ -7,12 +7,13 @@ Native Android (Java) client for the **IGRIS** AI platform — a ChatGPT-style m
 ## Features
 
 - Dark black/gold IGRIS command UI (timeline messages, processing bar, crown branding)
+- **ChatGPT-style sessions** — every conversation is saved to local storage; open the ☰ sidebar to switch, continue, or long-press to delete past chats. "New command" starts a fresh session without deleting old ones. History survives app restarts.
 - Two connection modes:
   - **Direct LLM API** — calls an NVIDIA / OpenAI-compatible endpoint yourself (`/v1/chat/completions`)
   - **IGRIS Backend** — talks to your Spring Boot app (`POST /ai/chat`)
 - In-app configuration: API key, base URL, model, temperature, max tokens, system prompt
 - Model dropdown, auto-populated from the provider's `/models` endpoint
-- Multi-turn conversation (full history sent to the model), saved locally
+- Multi-turn conversation (full history sent to the model), sessions saved locally
 - New-chat reset, offline-safe error bubbles
 
 ## Requirements
@@ -85,8 +86,9 @@ Tap **Save Configuration**.
 
 - Type a command in the input (`Enter your command…`) and press send or the keyboard's send action.
 - Switch models from the dropdown in the composer.
-- **＋** starts a new session (erases history).
-- Messages persist locally — close and reopen the app to continue.
+- **＋** starts a new session (old sessions are kept — see the ☰ sidebar).
+- Open the **☰ sidebar** (top-left) to see all saved sessions; tap to reopen, long-press to delete.
+- Sessions persist locally — close and reopen the app to continue any conversation.
 
 ---
 
@@ -161,13 +163,16 @@ app/src/main/java/org/abhi/aigris/mobile/
 ├── ui/
 │   ├── MainActivity.java        # chat screen
 │   ├── SettingsActivity.java    # API key / URL / model config
-│   └── ChatAdapter.java         # message timeline + loading row
+│   ├── ChatAdapter.java         # message timeline + loading row
+│   └── SessionAdapter.java      # saved-session list in the sidebar
 ├── api/
 │   └── LlmClient.java           # OkHttp client (direct LLM + /ai/chat modes)
 ├── data/
-│   └── PrefsManager.java        # settings + chat history persistence
+│   ├── PrefsManager.java        # config persistence (key, URL, model, persona)
+│   └── SessionStore.java        # local session storage (ChatGPT-style chats)
 └── model/
-    └── ChatMessage.java
+    ├── ChatMessage.java
+    └── ChatSession.java
 ```
 
 ## Security note
