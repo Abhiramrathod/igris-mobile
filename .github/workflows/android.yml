@@ -60,15 +60,12 @@ jobs:
           retention-days: 90
 
   release:
-    name: Release & Email
+    name: Release
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
 
     steps:
       - name: Download APK artifacts
@@ -89,26 +86,3 @@ jobs:
             IgrisMobile-${{ github.ref_name }}-debug.apk
           generate_release_notes: true
           fail_on_unmatched_files: true
-
-      - name: Send release email
-        if: env.MAIL_USERNAME != '' && env.MAIL_PASSWORD != ''
-        uses: appleboy/smtp-action@v1
-        with:
-          server: smtp.gmail.com
-          port: 587
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          from: IGRIS Mobile CI <${{ secrets.MAIL_USERNAME }}>
-          to: abhiramrathod21@gmail.com
-          subject: "[IGRIS Mobile] New release ${{ github.ref_name }}"
-          html_body: |
-            <div style="font-family: Arial, sans-serif; background:#08080A; padding:24px; color:#D4D0C8;">
-              <h2 style="color:#C8A24E;">&#9670; IGRIS Mobile ${{ github.ref_name }} &mdash; New Release</h2>
-              <p>A new build of <b>IGRIS Mobile</b> has been published.</p>
-              <p>Version: <b>${{ github.ref_name }}</b><br/>
-              Commit: <code>${{ github.sha }}</code><br/>
-              Release: <a href="https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" style="color:#E4C06A;">View on GitHub</a></p>
-              <p>The release APK is attached to this email.</p>
-              <p style="color:#5A5854; font-size:12px;">Sent automatically by the IGRIS Mobile CI pipeline.</p>
-            </div>
-          attachments: "IgrisMobile-${{ github.ref_name }}.apk"

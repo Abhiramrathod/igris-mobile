@@ -94,14 +94,12 @@ Tap **Save Configuration**.
 
 ## CI/CD pipeline
 
-`.github/workflows/android.yml` runs a 4-stage professional pipeline on every push/PR, and publishes a release + email on tags:
+`.github/workflows/android.yml` runs on every push/PR, and publishes a release on tags:
 
 | Stage | Trigger | What it does |
 |---|---|---|
-| **Lint** | every push/PR | `./gradlew lintDebug` static analysis; report uploaded on failure |
-| **Unit Tests** | every push/PR | `./gradlew testDebugUnitTest`; report uploaded on failure |
-| **Build APKs** | after lint + test pass | builds debug + release APKs (release is signed when keystore secrets exist, otherwise falls back to the debug key); both uploaded as artifacts |
-| **Release & Email** | `v*` tags only | publishes a GitHub Release with both APKs and **sends an email** to `abhiramrathod21@gmail.com` with the release APK attached |
+| **Build APKs** | every push/PR | builds debug + release APKs (release is signed when keystore secrets exist, otherwise falls back to the debug key); both uploaded as artifacts |
+| **Release** | `v*` tags only | publishes a GitHub Release with both APKs attached |
 
 Other hardening: concurrency control (duplicate runs on the same branch are cancelled), least-privilege `permissions`, job timeouts, and Gradle build caching.
 
@@ -112,7 +110,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-This creates the GitHub Release and sends the notification email automatically.
+This creates the GitHub Release automatically.
 
 ### Required secrets
 
@@ -120,21 +118,12 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 
 | Secret | Required | Purpose |
 |---|---|---|
-| `MAIL_USERNAME` | yes (for email) | Gmail address used to send release emails |
-| `MAIL_PASSWORD` | yes (for email) | Gmail **App Password** (16 chars), NOT your login password |
 | `KEYSTORE_BASE64` | optional | Base64-encoded release keystore for signing |
 | `KEYSTORE_PASSWORD` | optional | Keystore password |
 | `KEY_ALIAS` | optional | Key alias inside the keystore |
 | `KEY_PASSWORD` | optional | Password for that key alias |
 
 If the keystore secrets are missing, the release APK is still built (signed with the debug key) — set them for proper Play-store-grade signing.
-
-#### Gmail App Password (email)
-
-1. Turn on **2-Step Verification** for your Google account.
-2. Visit https://myaccount.google.com/apppasswords
-3. Create an app password named `github-actions`.
-4. Put your Gmail address in `MAIL_USERNAME` and the 16-character password in `MAIL_PASSWORD`.
 
 #### Release keystore (optional signing)
 
